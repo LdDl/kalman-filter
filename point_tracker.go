@@ -4,10 +4,14 @@ import (
 	"gonum.org/v1/gonum/mat"
 )
 
+// PointTracker Wraps KalmanFilterLinear
+// It's 2-D based data *tracker*
+// Usefull for object tracking in 2-D space
 type PointTracker struct {
 	kf *KalmanFilterLinear
 }
 
+// NewPointTracker Creates new pointer to PointTracker
 func NewPointTracker() *PointTracker {
 	tracker := PointTracker{}
 	tracker.kf = &KalmanFilterLinear{
@@ -60,10 +64,12 @@ func NewPointTracker() *PointTracker {
 	return &tracker
 }
 
+// Process Processing stage
 func (tracker *PointTracker) Process(u *mat.Dense, y *mat.Dense) (mat.Matrix, error) {
 	return tracker.kf.Step(u, y)
 }
 
+// SetTime Sets time delta into Transition State Matrix
 func (tracker *PointTracker) SetTime(dT float64) {
 	tracker.kf.A.Set(0, 2, dT)
 	tracker.kf.A.Set(1, 3, dT)

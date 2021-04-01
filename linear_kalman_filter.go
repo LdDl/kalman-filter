@@ -66,16 +66,16 @@ func (filter *KalmanFilterLinear) Update(y *mat.Dense) error {
 
 	// K = tmpPC ⋅ [((C ⋅ tmpPC)  + R)^-1]
 	// p.s. "^-1" - stands for inverse matrix
-	tmpPC_rows, tmpPC_cols := tmpPC.Dims()
-	tmpInversed := mat.NewDense(Crows, tmpPC_cols, nil)
+	tmpPCRows, tmpPCCols := tmpPC.Dims()
+	tmpInversed := mat.NewDense(Crows, tmpPCCols, nil)
 	tmpInversed.Mul(filter.C, tmpPC)
 	tmpInversed.Add(tmpInversed, filter.R)
 	err := tmpInversed.Inverse(tmpInversed)
 	if err != nil {
 		return errors.Wrap(err, "Can't execute Update() due the error while gonum's Inverse() execution")
 	}
-	_, tmpInversed_cols := tmpInversed.Dims()
-	K := mat.NewDense(tmpPC_rows, tmpInversed_cols, nil)
+	_, tmpInversedCols := tmpInversed.Dims()
+	K := mat.NewDense(tmpPCRows, tmpInversedCols, nil)
 	K.Mul(tmpPC, tmpInversed)
 
 	// Update state as:
