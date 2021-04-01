@@ -6,7 +6,7 @@ import (
 
 // PointTracker Wraps KalmanFilterLinear
 // It's 2-D based data *tracker*
-// Usefull for object tracking in 2-D space
+// Useful for object tracking in 2-D space
 type PointTracker struct {
 	kf *KalmanFilterLinear
 }
