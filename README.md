@@ -9,6 +9,7 @@
 - [Support](#support-and-contribution)
 - [Dependencies](#dependencies)
 - [License](#license)
+- [Devs](#developers)
 
 ## About
 
@@ -42,3 +43,11 @@ PR's are welcome.
 License of this library is [MIT](https://en.wikipedia.org/wiki/MIT_License).
 
 You can check it [here](LICENSE.md)
+
+## Developers
+
+LdDl https://github.com/LdDl
+
+Pavel7824 https://github.com/Pavel7824
+
+morozka https://github.com/morozka
