@@ -13,7 +13,7 @@
 
 ## About
 
-This is just linear kalman filter implementation in Go.
+This is just linear [kalman filter](https://en.wikipedia.org/wiki/Kalman_filter) implementation in Go.
 It contains simple 2-D based (point) tracker also.
 
 ## Installation
