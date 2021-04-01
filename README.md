@@ -27,7 +27,15 @@ File [point_tracker_test.go](point_tracker_test.go) two examples for usage Kalma
 
 * [point_tracker_test.go](point_tracker_test.go#L15) - stands for example with no noise addition to data
 
+    Ouput:
+
+    <img src="point-tracker-test-no-noise.png" width="640">
+
 * [point_tracker_test.go](point_tracker_test.go#L77) - stands for with noise addition to data
+
+    Ouput:
+
+    <img src="point-tracker-test-noised.png" width="640">
 
 ## Support and contribution
 
