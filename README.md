@@ -1,5 +1,5 @@
 ## Linear kalman filter
-[![GoDoc](https://godoc.org/github.com/LdDl/kalman-filter?status.svg)](https://godoc.org/github.com/LdDl/kalman-filter) [![Sourcegraph](https://sourcegraph.com/github.com/LdDl/kalman-filter/-/badge.svg)](https://sourcegraph.com/github.com/LdDl/kalman-filter?badge) [![Go Report Card](https://goreportcard.com/badge/github.com/LdDl/kalman-filter)](https://goreportcard.com/report/github.com/LdDl/kalman-filter) [![GitHub tag](https://img.shields.io/github/tag/LdDl/kalman-filter.svg)](https://github.com/LdDl/kalman-filter/releases)
+[![GoDoc](https://godoc.org/github.com/LdDl/kalman-filter?status.svg)](https://godoc.org/github.com/LdDl/kalman-filter) [![Sourcegraph](https://sourcegraph.com/github.com/LdDl/kalman-filter/-/badge.svg)](https://sourcegraph.com/github.com/LdDl/kalman-filter?badge) [![Go Report Card](https://goreportcard.com/badge/github.com/LdDl/kalman-filter)](https://goreportcard.com/report/github.com/LdDl/kalman-filter) [![GitHub tag](https://img.shields.io/github/tag/LdDl/kalman-filter.svg)](https://github.com/LdDl/kalman-filter/releases)[![Build Status](https://travis-ci.com/LdDl/kalman-filter.svg?branch=master)](https://travis-ci.com/LdDl/kalman-filter)
 
 ## Table of Contents
 
