@@ -58,6 +58,15 @@ func TestNoNoisePointTracker(t *testing.T) {
 			return
 		}
 		kalmanX, kalmanY := int(state.At(0, 0)), int(state.At(1, 0))
+
+		// Index [tm-1] in validating data since we are iterating from tm=1
+		correctKalmanX, correctkalmanY := int(pointTrackerValidateNoNoiseData[tm-1][0]), int(pointTrackerValidateNoNoiseData[tm-1][1])
+		if kalmanX != correctKalmanX {
+			t.Errorf("Step: %d. Filtered X-value should be %d, but got %d", tm-1, correctKalmanX, kalmanX)
+		}
+		if kalmanY != correctkalmanY {
+			t.Errorf("Step: %d. Filtered Y-value should be %d, but got %d", tm-1, correctkalmanY, kalmanY)
+		}
 		img.Set(int(xt), int(yt), colorRed)
 		img.Set(kalmanX, kalmanY, colorBlue)
 	}
@@ -122,7 +131,17 @@ func TestNoisedPointTracker(t *testing.T) {
 			t.Error(err)
 			return
 		}
+
 		kalmanX, kalmanY := int(state.At(0, 0)), int(state.At(1, 0))
+
+		// Index [tm-1] in validating data since we are iterating from tm=1
+		correctKalmanX, correctkalmanY := int(pointTrackerValidateNoisedData[tm-1][0]), int(pointTrackerValidateNoisedData[tm-1][1])
+		if kalmanX != correctKalmanX {
+			t.Errorf("Step: %d. Filtered X-value should be %d, but got %d", tm-1, correctKalmanX, kalmanX)
+		}
+		if kalmanY != correctkalmanY {
+			t.Errorf("Step: %d. Filtered Y-value should be %d, but got %d", tm-1, correctkalmanY, kalmanY)
+		}
 		img.Set(int(noisyXt), int(noisyYt), colorRed)
 		img.Set(kalmanX, kalmanY, colorBlue)
 	}
