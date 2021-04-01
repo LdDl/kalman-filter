@@ -23,7 +23,7 @@ go get github.com/LdDl/kalman-filter
 ```
 
 ## Usage
-File [point_tracker_test.go](point_tracker_test.go) two examples for usage Kalman filter with 2-d based datasets:
+File [point_tracker_test.go](point_tracker_test.go) contains two examples for usage Kalman filter with 2-d based datasets:
 
 * [point_tracker_test.go](point_tracker_test.go#L15) - stands for example with no noise addition to data
 
