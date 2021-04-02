@@ -64,6 +64,15 @@ func NewPointTracker() *PointTracker {
 	return &tracker
 }
 
+// SetStateValue Sets state value X
+// x, y, velocity_x, velocity_y must be provided
+func (tracker *PointTracker) SetStateValue(x, y, vx, vy float64) {
+	tracker.kf.X.Set(0, 0, x)
+	tracker.kf.X.Set(1, 0, y)
+	tracker.kf.X.Set(2, 0, vx)
+	tracker.kf.X.Set(3, 0, vy)
+}
+
 // Process Processing stage
 func (tracker *PointTracker) Process(u *mat.Dense, y *mat.Dense) (mat.Matrix, error) {
 	return tracker.kf.Step(u, y)

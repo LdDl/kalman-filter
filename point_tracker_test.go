@@ -31,10 +31,8 @@ func TestNoNoisePointTracker(t *testing.T) {
 		}
 	}
 
-	tracker.kf.X.Set(0, 0, pointTrackerTestData[0][0]) // x
-	tracker.kf.X.Set(1, 0, pointTrackerTestData[0][1]) // y
-	tracker.kf.X.Set(2, 0, 0)                          // vx
-	tracker.kf.X.Set(3, 0, 0)                          // vy
+	// Set x, y, vx, vy
+	tracker.SetStateValue(pointTrackerTestData[0][0], pointTrackerTestData[0][1], 0, 0)
 
 	for tm := 1; tm < len(pointTrackerTestData); tm++ {
 		xt := pointTrackerTestData[tm][0]
@@ -102,10 +100,8 @@ func TestNoisedPointTracker(t *testing.T) {
 		}
 	}
 
-	tracker.kf.X.Set(0, 0, pointTrackerTestData[0][0]) // x
-	tracker.kf.X.Set(1, 0, pointTrackerTestData[0][1]) // y
-	tracker.kf.X.Set(2, 0, 0)                          // vx
-	tracker.kf.X.Set(3, 0, 0)                          // vy
+	// Set x, y, vx, vy
+	tracker.SetStateValue(pointTrackerTestData[0][0], pointTrackerTestData[0][1], 0, 0)
 
 	for tm := 1; tm < len(pointTrackerTestData); tm++ {
 		xt := pointTrackerTestData[tm][0]
