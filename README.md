@@ -18,7 +18,7 @@ It contains simple 2-D based (point) tracker also.
 
 ## Installation
 Simply:
-```shell
+```
 go get github.com/LdDl/kalman-filter
 ```
 
