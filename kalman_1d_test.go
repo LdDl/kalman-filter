@@ -90,8 +90,6 @@ func BenchmarkKalman1D(b *testing.B) {
 	}
 	kalman := NewKalman1D(dt, u, stdDevA, stdDevM)
 
-	measurements := make([]float64, 0, iters)
-	predictions := make([]float64, 0, iters)
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
@@ -102,12 +100,9 @@ func BenchmarkKalman1D(b *testing.B) {
 			// Add some noise to perfect track
 			noise := rand.Float64()*100 - 50
 			z := kalman.H.At(0, 0)*x + noise
-			measurements = append(measurements, z)
 
 			// Predict stage
 			kalman.Predict()
-			state := kalman.GetVectorState()
-			predictions = append(predictions, state.At(0, 0))
 
 			// Update stage
 			err := kalman.Update(z)
@@ -117,6 +112,4 @@ func BenchmarkKalman1D(b *testing.B) {
 			}
 		}
 	}
-	_ = measurements
-	_ = predictions
 }

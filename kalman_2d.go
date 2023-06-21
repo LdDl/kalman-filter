@@ -60,7 +60,7 @@ type Kalman2D struct {
 }
 
 // NewKalman2D creates a new Kalman2D filter.
-func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64) *Kalman2D {
+func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...func(*Kalman2D)) *Kalman2D {
 
 	// Transition matrix A
 	A := mat.NewDense(4, 4, []float64{
@@ -134,7 +134,18 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64) *Kalman2D {
 		x:        x,
 	}
 	k.prealloc()
+	for _, o := range options {
+		o(k)
+	}
 	return k
+}
+
+// WithState2D sets custom initial state for state vector for 2D case
+func WithState2D(x, y float64) func(*Kalman2D) {
+	return func(k *Kalman2D) {
+		k.x.Set(0, 0, x)
+		k.x.Set(1, 0, y)
+	}
 }
 
 // prealloc does preparations to reduce allocs

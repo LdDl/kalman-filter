@@ -21,12 +21,10 @@ func TestKalman2D(t *testing.T) {
 	ix := xs[0] // Initial state for X
 	iy := ys[0] // Initial state for Y
 
-	kalman := NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy)
-	kalman.x.Set(0, 0, ix)
-	kalman.x.Set(1, 0, iy)
+	kalman := NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy, WithState2D(ix, iy))
 
-	predictions := [][]float64{}
-	updatedStates := [][]float64{}
+	predictions := make([][]float64, 0, len(xs))
+	updatedStates := make([][]float64, 0, len(xs))
 	for i := 0; i < len(xs); i++ {
 		// Considering that the measurements are noisy
 		mx := xs[i]

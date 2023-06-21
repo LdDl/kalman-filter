@@ -56,7 +56,7 @@ type Kalman1D struct {
 }
 
 // NewKalman1D creates a new Kalman1D filter.
-func NewKalman1D(dt, u, stdDevA, stdDevM float64) *Kalman1D {
+func NewKalman1D(dt, u, stdDevA, stdDevM float64, options ...func(*Kalman1D)) *Kalman1D {
 
 	// Transition matrix A
 	A := mat.NewDense(2, 2, []float64{
@@ -113,7 +113,17 @@ func NewKalman1D(dt, u, stdDevA, stdDevM float64) *Kalman1D {
 		x:       x,
 	}
 	k.prealloc()
+	for _, o := range options {
+		o(k)
+	}
 	return k
+}
+
+// WithState1D sets custom initial state for state vector for 1D case
+func WithState1D(x float64) func(*Kalman1D) {
+	return func(k *Kalman1D) {
+		k.x.Set(0, 0, x)
+	}
 }
 
 // prealloc does preparations to reduce allocs
