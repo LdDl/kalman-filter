@@ -9,14 +9,16 @@ import (
 
 var (
 	// Identity matrix
-	identity1d = mat.NewDense(2, 2, []float64{
-		1.0, 0.0,
-		0.0, 1.0,
+	identity2d = mat.NewDense(4, 4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
 	})
 )
 
-// Kalman1D is implementation of Discrete Kalman filter for case when there is only on variable X.
-type Kalman1D struct {
+// Kalman2D is implementation of Discrete Kalman filter for case when there are two variables: X and Y.
+type Kalman2D struct {
 	// Transition matrix
 	A *mat.Dense
 	// Control matrix
@@ -34,11 +36,13 @@ type Kalman1D struct {
 	// Single cycle time
 	dt float64
 	// Control input
-	u float64
+	u *mat.Dense
 	// Standard deviation of acceleration
 	stdDevA float64
-	// Standard deviation of measurement
-	stdDevM float64
+	// Standard deviation of measurement for X
+	stdDevMx float64
+	// Standard deviation of measurement for Y
+	stdDevMy float64
 
 	// Preallocated memory
 	ax_tmp     *mat.Dense
@@ -55,77 +59,95 @@ type Kalman1D struct {
 	newp       *mat.Dense
 }
 
-// NewKalman1D creates a new Kalman1D filter.
-func NewKalman1D(dt, u, stdDevA, stdDevM float64) *Kalman1D {
+// NewKalman2D creates a new Kalman2D filter.
+func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64) *Kalman2D {
 
 	// Transition matrix A
-	A := mat.NewDense(2, 2, []float64{
-		1.0, dt,
-		0.0, 1.0,
+	A := mat.NewDense(4, 4, []float64{
+		1.0, 0.0, dt, 0.0,
+		0.0, 1.0, 0.0, dt,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
 	})
 
 	// Control matrix B
-	B := mat.NewDense(2, 1, []float64{
-		0.5 * math.Pow(dt, 2),
-		dt,
+	B := mat.NewDense(4, 2, []float64{
+		0.5 * math.Pow(dt, 2), 0.0,
+		0.0, 0.5 * math.Pow(dt, 2),
+		dt, 0.0,
+		0.0, dt,
 	})
 
 	// Transformation matrix H
-	H := mat.NewDense(1, 2, []float64{
-		1.0, 0.0,
+	H := mat.NewDense(2, 4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
 	})
 
 	// Process noise covariance matrix Q
-	Q := mat.NewDense(2, 2, []float64{
-		0.25 * math.Pow(dt, 4), 0.5 * math.Pow(dt, 3),
-		0.5 * math.Pow(dt, 3), math.Pow(dt, 2),
+	Q := mat.NewDense(4, 4, []float64{
+		0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3), 0.0,
+		0.0, 0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3),
+		0.5 * math.Pow(dt, 3), 0.0, math.Pow(dt, 2), 0.0,
+		0.0, 0.5 * math.Pow(dt, 3), 0.0, math.Pow(dt, 2),
 	})
 	Q.Scale(math.Pow(stdDevA, 2), Q)
 
 	// Measurement noise covariance matrix R
-	R := mat.NewDense(1, 1, []float64{
-		math.Pow(stdDevM, 2),
+	R := mat.NewDense(2, 2, []float64{
+		math.Pow(stdDevMx, 2), 0.0,
+		0.0, math.Pow(stdDevMy, 2),
 	})
 
 	// Error covariance matrix P
-	P := mat.NewDense(2, 2, []float64{
-		1.0, 0.0,
-		0.0, 1.0,
+	P := mat.NewDense(4, 4, []float64{
+		1.0, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
 	})
 
 	// State vector x
-	x := mat.NewDense(2, 1, []float64{
+	x := mat.NewDense(4, 1, []float64{
+		0.0,
+		0.0,
 		0.0,
 		0.0,
 	})
 
-	k := &Kalman1D{
-		dt:      dt,
-		u:       u,
-		stdDevA: stdDevA,
-		stdDevM: stdDevM,
-		A:       A,
-		B:       B,
-		H:       H,
-		Q:       Q,
-		R:       R,
-		P:       P,
-		x:       x,
+	u := mat.NewDense(2, 1, []float64{
+		ux,
+		uy,
+	})
+
+	k := &Kalman2D{
+		dt:       dt,
+		u:        u,
+		stdDevA:  stdDevA,
+		stdDevMx: stdDevMy,
+		A:        A,
+		B:        B,
+		H:        H,
+		Q:        Q,
+		R:        R,
+		P:        P,
+		x:        x,
 	}
 	k.prealloc()
 	return k
 }
 
 // prealloc does preparations to reduce allocs
-func (k *Kalman1D) prealloc() {
+func (k *Kalman2D) prealloc() {
 	/* Alloc for Predict: */
 	arows, _ := k.A.Dims()
 	_, xcols := k.x.Dims()
 	ax_tmp := mat.NewDense(arows, xcols, nil)
 	ax_tmp.Mul(k.A, k.x)
 
-	brows, bcols := k.B.Dims()
-	bu_tmp := mat.NewDense(brows, bcols, nil)
+	brows, _ := k.B.Dims()
+	_, ucols := k.u.Dims()
+	bu_tmp := mat.NewDense(brows, ucols, nil)
 
 	prows, pcols := k.P.Dims()
 	ap_tmp := mat.NewDense(arows, pcols, nil)
@@ -141,7 +163,7 @@ func (k *Kalman1D) prealloc() {
 
 	gain := mat.NewDense(prows, htcols, nil)
 
-	z := mat.NewDense(1, 1, []float64{0})
+	z := mat.NewDense(2, 1, []float64{0, 0})
 
 	r := mat.NewDense(hrows, xcols, nil)
 
@@ -151,7 +173,7 @@ func (k *Kalman1D) prealloc() {
 
 	gain_h := mat.NewDense(gainrows, hcols, nil)
 
-	identityrows, identitycols := identity1d.Dims()
+	identityrows, identitycols := identity2d.Dims()
 	newp := mat.NewDense(identityrows, identitycols, nil)
 
 	k.ax_tmp = ax_tmp
@@ -170,10 +192,11 @@ func (k *Kalman1D) prealloc() {
 
 // Predict projects the state and the error covariance ahead
 // Mutates the state vector and the error covariance matrix
-func (k *Kalman1D) Predict() {
+func (k *Kalman2D) Predict() {
 	// Ref.: Eq.(5)
 	k.ax_tmp.Mul(k.A, k.x)
-	k.bu_tmp.Scale(k.u, k.B)
+	k.bu_tmp.Mul(k.B, k.u)
+
 	k.x.Add(k.ax_tmp, k.bu_tmp)
 
 	// Ref.: Eq.(6)
@@ -184,7 +207,7 @@ func (k *Kalman1D) Predict() {
 
 // Update computes the Kalman gain and then updates the state vector and the error covariance matrix
 // Mutates the state vector and the error covariance matrix.
-func (k *Kalman1D) Update(zvalue float64) error {
+func (k *Kalman2D) Update(zvaluex, xvaluey float64) error {
 	// Ref.: Eq.(7)
 	k.hp_tmp.Mul(k.H, k.P)
 	k.inv.Mul(k.hp_tmp, k.htranspose)
@@ -196,7 +219,8 @@ func (k *Kalman1D) Update(zvalue float64) error {
 	k.gain.Mul(k.P, k.htranspose)
 	k.gain.Mul(k.gain, k.inv)
 	// Ref.: Eq.(8)
-	k.z.Set(0, 0, zvalue)
+	k.z.Set(0, 0, zvaluex)
+	k.z.Set(1, 0, xvaluey)
 	k.r.Mul(k.H, k.x)
 	k.r.Sub(k.z, k.r)
 	// Ref.: Eq.(9)
@@ -204,21 +228,23 @@ func (k *Kalman1D) Update(zvalue float64) error {
 	k.x.Add(k.x, k.gain_r)
 	// Ref.: Eq.(10)
 	k.gain_h.Mul(k.gain, k.H)
-	k.newp.Sub(identity1d, k.gain_h)
+	k.newp.Sub(identity2d, k.gain_h)
 	k.P.Mul(k.newp, k.P)
 	return nil
 }
 
-// GetState returns the current state (only X, not Vx).
-func (k *Kalman1D) GetState() float64 {
-	return k.x.At(0, 0)
+// GetState returns the current state (only X and Y, not Vx and Vy).
+func (k *Kalman2D) GetState() (float64, float64) {
+	return k.x.At(0, 0), k.x.At(1, 0)
 }
 
-// GetVectorState returns the copy current state (both X and Vx).
-func (k *Kalman1D) GetVectorState() *mat.Dense {
-	x := mat.NewDense(2, 1, []float64{
+// GetVectorState returns the copy current state (both (X, Y) and (Vx, Vy)).
+func (k *Kalman2D) GetVectorState() *mat.Dense {
+	x := mat.NewDense(4, 1, []float64{
 		k.x.At(0, 0),
 		k.x.At(1, 0),
+		k.x.At(2, 0),
+		k.x.At(3, 0),
 	})
 	return x
 }
