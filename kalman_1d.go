@@ -39,6 +39,20 @@ type Kalman1D struct {
 	stdDevA float64
 	// Standard deviation of measurement
 	stdDevM float64
+
+	// Preallocated memory
+	ax_tmp     *mat.Dense
+	bu_tmp     *mat.Dense
+	ap_tmp     *mat.Dense
+	hp_tmp     *mat.Dense
+	htranspose mat.Matrix
+	inv        *mat.Dense
+	gain       *mat.Dense
+	z          *mat.Dense
+	r          *mat.Dense
+	gain_r     *mat.Dense
+	gain_h     *mat.Dense
+	newp       *mat.Dense
 }
 
 // NewKalman1D creates a new Kalman1D filter.
@@ -85,7 +99,7 @@ func NewKalman1D(dt, u, stdDevA, stdDevM float64) *Kalman1D {
 		0.0,
 	})
 
-	return &Kalman1D{
+	k := &Kalman1D{
 		dt:      dt,
 		u:       u,
 		stdDevA: stdDevA,
@@ -98,67 +112,96 @@ func NewKalman1D(dt, u, stdDevA, stdDevM float64) *Kalman1D {
 		P:       P,
 		x:       x,
 	}
+	k.prealloc()
+	return k
 }
 
-func (k *Kalman1D) Predict() {
-	// Ref.: Eq.(5)
+func (k *Kalman1D) prealloc() {
+	/* Alloc for Predict: */
 	arows, _ := k.A.Dims()
 	_, xcols := k.x.Dims()
 	ax_tmp := mat.NewDense(arows, xcols, nil)
 	ax_tmp.Mul(k.A, k.x)
+
 	brows, bcols := k.B.Dims()
 	bu_tmp := mat.NewDense(brows, bcols, nil)
-	bu_tmp.Scale(k.u, k.B)
-	k.x.Add(ax_tmp, bu_tmp)
+
+	prows, pcols := k.P.Dims()
+	ap_tmp := mat.NewDense(arows, pcols, nil)
+
+	/* Alloc for Update: */
+	hrows, hcols := k.H.Dims()
+	hp_tmp := mat.NewDense(hrows, pcols, nil)
+	htranspose := k.H.T()
+
+	_, htcols := k.H.T().Dims()
+	hprows, _ := hp_tmp.Dims()
+	inv := mat.NewDense(hprows, htcols, nil)
+
+	gain := mat.NewDense(prows, htcols, nil)
+
+	z := mat.NewDense(1, 1, []float64{0})
+
+	r := mat.NewDense(hrows, xcols, nil)
+
+	gainrows, _ := gain.Dims()
+	_, rcols := r.Dims()
+	gain_r := mat.NewDense(gainrows, rcols, nil)
+
+	gain_h := mat.NewDense(gainrows, hcols, nil)
+
+	identityrows, identitycols := identity.Dims()
+	newp := mat.NewDense(identityrows, identitycols, nil)
+
+	k.ax_tmp = ax_tmp
+	k.bu_tmp = bu_tmp
+	k.ap_tmp = ap_tmp
+	k.hp_tmp = hp_tmp
+	k.htranspose = htranspose
+	k.inv = inv
+	k.gain = gain
+	k.z = z
+	k.r = r
+	k.gain_r = gain_r
+	k.gain_h = gain_h
+	k.newp = newp
+}
+
+func (k *Kalman1D) Predict() {
+	// Ref.: Eq.(5)
+	k.ax_tmp.Mul(k.A, k.x)
+	k.bu_tmp.Scale(k.u, k.B)
+	k.x.Add(k.ax_tmp, k.bu_tmp)
 
 	// Ref.: Eq.(6)
-	_, pcols := k.P.Dims()
-	ap_tmp := mat.NewDense(arows, pcols, nil)
-	ap_tmp.Mul(k.A, k.P)
-	ap_tmp.Mul(ap_tmp, k.A.T())
-	k.P.Add(ap_tmp, k.Q)
+	k.ap_tmp.Mul(k.A, k.P)
+	k.ap_tmp.Mul(k.ap_tmp, k.A.T())
+	k.P.Add(k.ap_tmp, k.Q)
 }
 
 // Update computes the Kalman gain and then updates the state vector and the error covariance matrix.
 func (k *Kalman1D) Update(zvalue float64) error {
 	// Ref.: Eq.(7)
-	hrows, hcols := k.H.Dims()
-	prows, pcols := k.P.Dims()
-	hp_tmp := mat.NewDense(hrows, pcols, nil)
-	hp_tmp.Mul(k.H, k.P)
-	hprows, _ := hp_tmp.Dims()
-	htranspose := k.H.T()
-	_, htcols := htranspose.Dims()
-	inv := mat.NewDense(hprows, htcols, nil)
-	inv.Mul(hp_tmp, htranspose)
-	inv.Add(inv, k.R)
-	err := inv.Inverse(inv)
+	k.hp_tmp.Mul(k.H, k.P)
+	k.inv.Mul(k.hp_tmp, k.htranspose)
+	k.inv.Add(k.inv, k.R)
+	err := k.inv.Inverse(k.inv)
 	if err != nil {
 		return errors.Wrap(err, "Can't execute Update() due the error while gonum's Inverse() execution")
 	}
-	gain := mat.NewDense(prows, htcols, nil)
-	gain.Mul(k.P, htranspose)
-	gain.Mul(gain, inv)
+	k.gain.Mul(k.P, k.htranspose)
+	k.gain.Mul(k.gain, k.inv)
 	// Ref.: Eq.(8)
-	z := mat.NewDense(1, 1, []float64{zvalue})
-	_, xcols := k.x.Dims()
-	r := mat.NewDense(hrows, xcols, nil)
-	r.Mul(k.H, k.x)
-	r.Sub(z, r)
+	k.z.Set(0, 0, zvalue)
+	k.r.Mul(k.H, k.x)
+	k.r.Sub(k.z, k.r)
 	// Ref.: Eq.(9)
-	gainrows, _ := gain.Dims()
-	_, rcols := r.Dims()
-	gain_r := mat.NewDense(gainrows, rcols, nil)
-	gain_r.Mul(gain, r)
-	k.x.Add(k.x, gain_r)
+	k.gain_r.Mul(k.gain, k.r)
+	k.x.Add(k.x, k.gain_r)
 	// Ref.: Eq.(10)
-	gain_h := mat.NewDense(gainrows, hcols, nil)
-	gain_h.Mul(gain, k.H)
-
-	identityrows, identitycols := identity.Dims()
-	newp := mat.NewDense(identityrows, identitycols, nil)
-	newp.Sub(identity, gain_h)
-	k.P.Mul(newp, k.P)
+	k.gain_h.Mul(k.gain, k.H)
+	k.newp.Sub(identity, k.gain_h)
+	k.P.Mul(k.newp, k.P)
 	return nil
 }
 
