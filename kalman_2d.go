@@ -62,7 +62,7 @@ type Kalman2D struct {
 // NewKalman2D creates a new Kalman2D filter.
 func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...func(*Kalman2D)) *Kalman2D {
 
-	// Transition matrix A
+	// Ref.: Eq.(31)
 	A := mat.NewDense(4, 4, []float64{
 		1.0, 0.0, dt, 0.0,
 		0.0, 1.0, 0.0, dt,
@@ -70,7 +70,7 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...fun
 		0.0, 0.0, 0.0, 1.0,
 	})
 
-	// Control matrix B
+	// Ref.: Eq.(32)
 	B := mat.NewDense(4, 2, []float64{
 		0.5 * math.Pow(dt, 2), 0.0,
 		0.0, 0.5 * math.Pow(dt, 2),
@@ -78,13 +78,13 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...fun
 		0.0, dt,
 	})
 
-	// Transformation matrix H
+	// Ref.: Eq.(34)
 	H := mat.NewDense(2, 4, []float64{
 		1.0, 0.0, 0.0, 0.0,
 		0.0, 1.0, 0.0, 0.0,
 	})
 
-	// Process noise covariance matrix Q
+	// Ref.: Eq.(40)
 	Q := mat.NewDense(4, 4, []float64{
 		0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3), 0.0,
 		0.0, 0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3),
@@ -93,7 +93,7 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...fun
 	})
 	Q.Scale(math.Pow(stdDevA, 2), Q)
 
-	// Measurement noise covariance matrix R
+	// Ref.: Eq.(41)
 	R := mat.NewDense(2, 2, []float64{
 		math.Pow(stdDevMx, 2), 0.0,
 		0.0, math.Pow(stdDevMy, 2),
@@ -115,6 +115,7 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...fun
 		0.0,
 	})
 
+	// Control input for X and Y
 	u := mat.NewDense(2, 1, []float64{
 		ux,
 		uy,

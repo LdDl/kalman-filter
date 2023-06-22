@@ -58,31 +58,31 @@ type Kalman1D struct {
 // NewKalman1D creates a new Kalman1D filter.
 func NewKalman1D(dt, u, stdDevA, stdDevM float64, options ...func(*Kalman1D)) *Kalman1D {
 
-	// Transition matrix A
+	// Ref.: Eq.(17)
 	A := mat.NewDense(2, 2, []float64{
 		1.0, dt,
 		0.0, 1.0,
 	})
 
-	// Control matrix B
+	// Ref.: Eq.(18)
 	B := mat.NewDense(2, 1, []float64{
 		0.5 * math.Pow(dt, 2),
 		dt,
 	})
 
-	// Transformation matrix H
+	// Ref.: Eq.(20)
 	H := mat.NewDense(1, 2, []float64{
 		1.0, 0.0,
 	})
 
-	// Process noise covariance matrix Q
+	// Ref.: Eq.(25)
 	Q := mat.NewDense(2, 2, []float64{
 		0.25 * math.Pow(dt, 4), 0.5 * math.Pow(dt, 3),
 		0.5 * math.Pow(dt, 3), math.Pow(dt, 2),
 	})
 	Q.Scale(math.Pow(stdDevA, 2), Q)
 
-	// Measurement noise covariance matrix R
+	// Ref.: Eq.(26)
 	R := mat.NewDense(1, 1, []float64{
 		math.Pow(stdDevM, 2),
 	})
@@ -93,7 +93,7 @@ func NewKalman1D(dt, u, stdDevA, stdDevM float64, options ...func(*Kalman1D)) *K
 		0.0, 1.0,
 	})
 
-	// State vector x
+	// State vector X
 	x := mat.NewDense(2, 1, []float64{
 		0.0,
 		0.0,
