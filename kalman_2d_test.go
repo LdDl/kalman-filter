@@ -1,6 +1,9 @@
 package kalman_filter
 
 import (
+	"encoding/csv"
+	"fmt"
+	"os"
 	"testing"
 )
 
@@ -44,8 +47,35 @@ func TestKalman2D(t *testing.T) {
 		updatedState := kalman.GetVectorState()
 		updatedStates = append(updatedStates, []float64{updatedState.At(0, 0), updatedState.At(1, 0)})
 	}
-	// fmt.Println("measurement X;measurement Y;prediction X;prediction Y;updated X;updated Y")
-	// for i := 0; i < len(xs); i++ {
-	// 	fmt.Printf("%f;%f;%f;%f;%f;%f\n", xs[i], ys[i], predictions[i][0], predictions[i][1], updatedStates[i][0], updatedStates[i][1])
-	// }
+
+	file, err := os.Create("./data/kalman-2d.csv")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+	writer.Comma = ';'
+
+	err = writer.Write([]string{"measurement X", "measurement Y", "prediction X", "prediction Y", "updated X", "updated Y"})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for i := 0; i < len(xs); i++ {
+		err = writer.Write([]string{
+			fmt.Sprintf("%f", xs[i]),
+			fmt.Sprintf("%f", ys[i]),
+			fmt.Sprintf("%f", predictions[i][0]),
+			fmt.Sprintf("%f", predictions[i][1]),
+			fmt.Sprintf("%f", updatedStates[i][0]),
+			fmt.Sprintf("%f", updatedStates[i][1]),
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	}
 }

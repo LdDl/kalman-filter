@@ -1,7 +1,10 @@
 package kalman_filter
 
 import (
+	"encoding/csv"
+	"fmt"
 	"math/rand"
+	"os"
 	"testing"
 )
 
@@ -56,10 +59,36 @@ func TestKalman1D(t *testing.T) {
 			return
 		}
 	}
-	// fmt.Println("time;perfect;measurement;prediction")
-	// for i := 0; i < len(track); i++ {
-	// 	fmt.Printf("%f;%f;%f;%f\n", track[i].t, track[i].x, measurements[i], predictions[i])
-	// }
+
+	file, err := os.Create("./data/kalman-1d.csv")
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+	writer.Comma = ';'
+
+	err = writer.Write([]string{"time", "perfect", "measurement", "prediction"})
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	for i := 0; i < len(track); i++ {
+		err = writer.Write([]string{
+			fmt.Sprintf("%f", track[i].t),
+			fmt.Sprintf("%f", track[i].x),
+			fmt.Sprintf("%f", measurements[i]),
+			fmt.Sprintf("%f", predictions[i]),
+		})
+		if err != nil {
+			t.Error(err)
+			return
+		}
+	}
+
 }
 
 func BenchmarkKalman1D(b *testing.B) {
