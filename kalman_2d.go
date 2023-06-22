@@ -59,7 +59,16 @@ type Kalman2D struct {
 	newp       *mat.Dense
 }
 
-// NewKalman2D creates a new Kalman2D filter.
+// NewKalman2D creates a new Kalman2D filter
+//
+// dt - Single cycle time
+// ux - Control input for X
+// uy - Control input for Y
+// stdDevA - Standart deviation of acceleration
+// stdDevMx - Standart deviation of measurement for X
+// stdDevMy - Standart deviation of measurement for Y
+// options - functional parameters
+//
 func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...func(*Kalman2D)) *Kalman2D {
 
 	// Ref.: Eq.(31)
