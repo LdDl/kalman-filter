@@ -31,14 +31,6 @@ type Kalman1D struct {
 	P *mat.Dense
 	// State vector x, vx
 	x *mat.Dense
-	// Single cycle time
-	dt float64
-	// Control input
-	u float64
-	// Standard deviation of acceleration
-	stdDevA float64
-	// Standard deviation of measurement
-	stdDevM float64
 
 	// Preallocated memory
 	ax_tmp     *mat.Dense
@@ -53,6 +45,15 @@ type Kalman1D struct {
 	gain_r     *mat.Dense
 	gain_h     *mat.Dense
 	newp       *mat.Dense
+
+	// Single cycle time
+	dt float64
+	// Control input
+	u float64
+	// Standard deviation of acceleration
+	stdDevA float64
+	// Standard deviation of measurement
+	stdDevM float64
 }
 
 // NewKalman1D creates a new Kalman1D filter

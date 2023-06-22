@@ -33,16 +33,8 @@ type Kalman2D struct {
 	P *mat.Dense
 	// State vector x, vx
 	x *mat.Dense
-	// Single cycle time
-	dt float64
 	// Control input
 	u *mat.Dense
-	// Standard deviation of acceleration
-	stdDevA float64
-	// Standard deviation of measurement for X
-	stdDevMx float64
-	// Standard deviation of measurement for Y
-	stdDevMy float64
 
 	// Preallocated memory
 	ax_tmp     *mat.Dense
@@ -57,6 +49,15 @@ type Kalman2D struct {
 	gain_r     *mat.Dense
 	gain_h     *mat.Dense
 	newp       *mat.Dense
+
+	// Single cycle time
+	dt float64
+	// Standard deviation of acceleration
+	stdDevA float64
+	// Standard deviation of measurement for X
+	stdDevMx float64
+	// Standard deviation of measurement for Y
+	stdDevMy float64
 }
 
 // NewKalman2D creates a new Kalman2D filter
@@ -134,7 +135,8 @@ func NewKalman2D(dt, ux, uy, stdDevA, stdDevMx, stdDevMy float64, options ...fun
 		dt:       dt,
 		u:        u,
 		stdDevA:  stdDevA,
-		stdDevMx: stdDevMy,
+		stdDevMx: stdDevMx,
+		stdDevMy: stdDevMy,
 		A:        A,
 		B:        B,
 		H:        H,
