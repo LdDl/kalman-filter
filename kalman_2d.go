@@ -215,6 +215,56 @@ func (k *Kalman2D) prealloc() {
 
 // Predict projects the state and the error covariance ahead
 // Mutates the state vector and the error covariance matrix
+// SetDt rebuilds the time-dependent matrices for a new cycle time.
+//
+// A discrete Kalman filter is only valid for the sampling interval its
+// transition and process-noise matrices were built for. When frames arrive
+// unevenly - a dropped frame, a stalled decoder, a variable frame rate -
+// keeping the nominal dt makes Predict project the state over the wrong
+// interval, and Q then understates how much the state could have changed.
+// Call this with the real elapsed time before Predict.
+//
+// The state vector and the error covariance are deliberately left alone: they
+// describe the present estimate, which does not depend on how long the next
+// step will be.
+func (k *Kalman2D) SetDt(dt float64) {
+	if dt <= 0.0 || dt == k.dt {
+		return
+	}
+	k.dt = dt
+
+	// Ref.: Eq.(31)
+	k.A.SetRawMatrix(mat.NewDense(4, 4, []float64{
+		1.0, 0.0, dt, 0.0,
+		0.0, 1.0, 0.0, dt,
+		0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 1.0,
+	}).RawMatrix())
+
+	// Ref.: Eq.(32)
+	k.B.SetRawMatrix(mat.NewDense(4, 2, []float64{
+		0.5 * math.Pow(dt, 2), 0.0,
+		0.0, 0.5 * math.Pow(dt, 2),
+		dt, 0.0,
+		0.0, dt,
+	}).RawMatrix())
+
+	// Ref.: Eq.(40)
+	Q := mat.NewDense(4, 4, []float64{
+		0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3), 0.0,
+		0.0, 0.25 * math.Pow(dt, 4), 0.0, 0.5 * math.Pow(dt, 3),
+		0.5 * math.Pow(dt, 3), 0.0, math.Pow(dt, 2), 0.0,
+		0.0, 0.5 * math.Pow(dt, 3), 0.0, math.Pow(dt, 2),
+	})
+	Q.Scale(math.Pow(k.stdDevA, 2), Q)
+	k.Q.SetRawMatrix(Q.RawMatrix())
+}
+
+// GetDt returns the cycle time the filter is currently built for
+func (k *Kalman2D) GetDt() float64 {
+	return k.dt
+}
+
 func (k *Kalman2D) Predict() {
 	// Ref.: Eq.(5)
 	k.ax_tmp.Mul(k.A, k.x)

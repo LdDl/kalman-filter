@@ -256,6 +256,63 @@ func (k *KalmanBBox) prealloc() {
 
 // Predict projects the state and the error covariance ahead
 // Mutates the state vector and the error covariance matrix
+// SetDt rebuilds the time-dependent matrices for a new cycle time.
+//
+// See Kalman2D.SetDt for the reasoning: a discrete filter is only valid for the
+// sampling interval its A and Q were built for, so an uneven frame arrival has
+// to be fed in here before Predict.
+func (k *KalmanBBox) SetDt(dt float64) {
+	if dt <= 0.0 || dt == k.dt {
+		return
+	}
+	k.dt = dt
+	dt2 := dt * dt
+	dt3 := dt2 * dt
+	dt4 := dt3 * dt
+	stdDevA2 := k.stdDevA * k.stdDevA
+
+	// Ref.: Eq.(53)
+	k.A.SetRawMatrix(mat.NewDense(8, 8, []float64{
+		1.0, 0.0, 0.0, 0.0, dt, 0.0, 0.0, 0.0,
+		0.0, 1.0, 0.0, 0.0, 0.0, dt, 0.0, 0.0,
+		0.0, 0.0, 1.0, 0.0, 0.0, 0.0, dt, 0.0,
+		0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, dt,
+		0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0,
+		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0,
+		0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+	}).RawMatrix())
+
+	// Ref.: Eq.(54)
+	k.B.SetRawMatrix(mat.NewDense(8, 4, []float64{
+		0.5 * dt2, 0.0, 0.0, 0.0,
+		0.0, 0.5 * dt2, 0.0, 0.0,
+		0.0, 0.0, 0.5 * dt2, 0.0,
+		0.0, 0.0, 0.0, 0.5 * dt2,
+		dt, 0.0, 0.0, 0.0,
+		0.0, dt, 0.0, 0.0,
+		0.0, 0.0, dt, 0.0,
+		0.0, 0.0, 0.0, dt,
+	}).RawMatrix())
+
+	// Ref.: Eq.(62)
+	k.Q.SetRawMatrix(mat.NewDense(8, 8, []float64{
+		0.25 * dt4 * stdDevA2, 0.0, 0.0, 0.0, 0.5 * dt3 * stdDevA2, 0.0, 0.0, 0.0,
+		0.0, 0.25 * dt4 * stdDevA2, 0.0, 0.0, 0.0, 0.5 * dt3 * stdDevA2, 0.0, 0.0,
+		0.0, 0.0, 0.25 * dt4 * stdDevA2, 0.0, 0.0, 0.0, 0.5 * dt3 * stdDevA2, 0.0,
+		0.0, 0.0, 0.0, 0.25 * dt4 * stdDevA2, 0.0, 0.0, 0.0, 0.5 * dt3 * stdDevA2,
+		0.5 * dt3 * stdDevA2, 0.0, 0.0, 0.0, dt2 * stdDevA2, 0.0, 0.0, 0.0,
+		0.0, 0.5 * dt3 * stdDevA2, 0.0, 0.0, 0.0, dt2 * stdDevA2, 0.0, 0.0,
+		0.0, 0.0, 0.5 * dt3 * stdDevA2, 0.0, 0.0, 0.0, dt2 * stdDevA2, 0.0,
+		0.0, 0.0, 0.0, 0.5 * dt3 * stdDevA2, 0.0, 0.0, 0.0, dt2 * stdDevA2,
+	}).RawMatrix())
+}
+
+// GetDt returns the cycle time the filter is currently built for
+func (k *KalmanBBox) GetDt() float64 {
+	return k.dt
+}
+
 func (k *KalmanBBox) Predict() {
 	// Ref.: Eq.(5)
 	k.ax_tmp.Mul(k.A, k.x)
